@@ -3,31 +3,7 @@ import { findPackageJSON } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { debug } from './io.js';
 import { styleText } from 'node:util';
-
-interface ArboristPatch {
-	applyPatchToDir(options: { patch: string; cwd: string }): Promise<void>;
-}
-
-let arboristPatch: ArboristPatch = {
-	applyPatchToDir() {
-		throw new Error('Can not find a valid installation of @npmcli/arborist, you may need to install it.');
-	},
-};
-
-const arboristSpec = '@npmcli/arborist/lib/patch.js';
-const globalDirs = ['/usr/lib/node_modules/', '/usr/local/lib/node_modules', '/usr/lib/node_modules_24'];
-
-for (const spec of [...globalDirs.map(d => join(d, arboristSpec)), ...globalDirs.map(d => join(d, 'npm/node_modules', arboristSpec)), arboristSpec]) {
-	try {
-		arboristPatch = await import(spec);
-		if (arboristPatch) {
-			debug('Found @npmcli/arborist in', spec.replace(arboristSpec, '') || 'local');
-			break;
-		}
-	} catch {
-		// probably not installed
-	}
-}
+import { applyPatchToDir } from './patch.js';
 
 /**
  * Automatically determines the target directory for patching.
@@ -54,7 +30,7 @@ export interface PatchConfig {
 	usePatchedDependencies: boolean;
 }
 
-export async function patchDependent(config: PatchConfig) {
+export function patchDependent(config: PatchConfig) {
 	const root = join(config.directory, 'package.json');
 
 	const targetPath = findPackageJSON(config.target, root);
@@ -75,7 +51,7 @@ export async function patchDependent(config: PatchConfig) {
 	}
 
 	debug('Patching', styleText(['bold', 'dim'], config.target), 'v' + version, 'using', patchPath);
-	await arboristPatch.applyPatchToDir({ patch: readFileSync(patchPath, 'utf8'), cwd: dirname(targetPath) });
+	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(targetPath));
 }
 
 /** Subpatch configuration in package.json */

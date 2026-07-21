@@ -53,12 +53,7 @@
 		"printWidth": 180,
 		"arrowParens": "avoid"
 	},
-	"peerDependencies": {
-		"@npmcli/arborist": "^10.0.1"
-	},
-	"peerDependenciesMeta": {
-		"@npmcli/arborist": {
-			"optional": true
-		}
+	"dependencies": {
+		"diff": "^9.0.0"
 	}
 }
