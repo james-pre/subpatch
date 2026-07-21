@@ -3,6 +3,7 @@ import { findPackageJSON } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { styleText } from 'node:util';
 import { applyPatchToDir } from './patch.js';
+import { debug } from './io.js';
 
 /**
  * Automatically determines the target directory for patching.
@@ -65,8 +66,9 @@ export function patchDependent(config: PatchConfig) {
 		}
 	}
 
-	console.log('Patching', styleText('bold', config.target), 'v' + version, 'using', patchPath);
-	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(config.targetPath));
+	debug('Patching', config.target, 'v' + version, 'using', patchPath);
+	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(config.targetPath));
+	console.log(applied ? 'Patched' : 'Skipped', styleText('bold', config.target), 'v' + version, 'using', patchPath);
 }
 
 /** Subpatch configuration in package.json */
