@@ -20,6 +20,7 @@ export interface Dependency extends PackageInfo {
 	targets: PatchedPackageInfo[];
 	/** If set, patch paths were resolved relative to this directory */
 	patchesDir?: string;
+	[k: string]: unknown;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -48,7 +49,7 @@ export function parseDependency(
 
 	const pkg = JSON.parse(readFileSync(sourcePath, 'utf8'));
 
-	const source = { name: pkg.name, version: pkg.version, dir: dirname(sourcePath) };
+	const source = { ...pkg, dir: dirname(sourcePath) };
 
 	if (!pkg.subpatch) return { ...source, targets: [], patches: [] };
 

@@ -1,12 +1,14 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
-import { dirname, join } from 'node:path';
-import { satisfies as satisfiesSemver } from 'semver';
-import type { PackageInfo, Patch, PatchedPackageInfo, PatchInit } from './api.js';
-import * as io from './io.js';
+import { basename, join } from 'node:path';
+import type { PatchInit } from './api.js';
 
+/**
+ * Resolves the package.json path for a given specifier or path using and root directory
+ */
 export function resolvePackage(rootDir: string, specifierOrPath: string): string | undefined {
-	const pkgJson = join(specifierOrPath, 'package.json');
+	const pkgJson =
+		basename(specifierOrPath) === 'package.json' ? specifierOrPath : join(specifierOrPath, 'package.json');
 	return existsSync(pkgJson) ? pkgJson : findPackageJSON(specifierOrPath, join(rootDir, 'package.json'));
 }
 
