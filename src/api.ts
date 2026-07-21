@@ -1,113 +1,58 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { findPackageJSON } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { styleText } from 'node:util';
+import * as io from './io.js';
 import { applyPatchToDir } from './patch.js';
-import { debug } from './io.js';
 
-/**
- * Automatically determines the target directory for patching.
- */
-export function detectDirectory(): string {
-	return process.env.INIT_CWD || process.cwd();
+export interface PatchInit {
+	/** The path to the patch file */
+	path: string;
+	/** If set and the dependency is missing, the patch will be skipped */
+	optional?: boolean;
+	/** A semver range to limit the patch to */
+	version?: string;
 }
 
-export function resolvePackage(directory: string, specifierOrPath: string): string | undefined {
-	const pkgJson = join(specifierOrPath, 'package.json');
-	return existsSync(pkgJson) ? pkgJson : findPackageJSON(specifierOrPath, join(directory, 'package.json'));
-}
-
-/**
- * Resolve a package's `package.json` by trying each base in order.
- * `findPackageJSON` throws `ERR_MODULE_NOT_FOUND` when a specifier can't be resolved from a base,
- * so each attempt is guarded and we move on to the next base.
- */
-function findPackage(specifier: string, ...bases: string[]): string | undefined {
-	for (const base of bases) {
-		try {
-			const path = findPackageJSON(specifier, base);
-			if (path) return path;
-		} catch {
-			// Not resolvable from this base; try the next one.
-		}
-	}
-}
-
-export interface PatchConfig {
+export interface Patch extends PatchInit {
 	/** Path for the dependent of the dependency to be patched */
 	source: string;
 	/** Directory containing node_modules and root package.json */
 	directory: string;
 	/** Specifier for the dependency to be patched */
 	target: string;
-	/** Path to the patch file */
-	patchFile: string;
 	/** If set, use the built-in `npm patch` functionality. */
-	usePatchedDependencies: boolean;
+	usePatchedDependencies?: boolean;
+
+	// These are for re-using already computed values.
 	/** Resolved path to the target dependency's `package.json` */
 	targetPath: string;
+	/** The version of the target dependency */
+	targetVersion: string;
 }
 
-export function patchDependent(config: PatchConfig) {
-	const root = join(config.directory, 'package.json');
+export function formatPatch(patch: Patch, patchesDir?: string): string {
+	let text = patchesDir ? styleText('dim', patchesDir + '/') + relative(patchesDir, patch.path) : patch.path;
+	if (patch.version) text += styleText('blue', ' ' + patch.version);
+	if (patch.optional) text += styleText('green', ' optional');
+	return text;
+}
 
-	const pkg = JSON.parse(readFileSync(config.targetPath, 'utf8'));
-	const { version } = pkg;
+export function patchDependent(patch: Patch) {
+	const root = join(patch.directory, 'package.json');
 
-	const patchPath = resolve('node_modules', config.source, config.patchFile);
+	const patchPath = resolve('node_modules', patch.source, patch.path);
 
-	if (config.usePatchedDependencies) {
+	if (patch.usePatchedDependencies) {
 		const dependant = JSON.parse(readFileSync(root, 'utf8'));
 		dependant.patchedDependencies ??= {};
-		const key = `${config.target}@${version}`;
+		const key = `${patch.target}@${patch.targetVersion}`;
 		if (dependant.patchedDependencies[key] !== patchPath) {
 			dependant.patchedDependencies[key] = patchPath;
 			writeFileSync(root, JSON.stringify(dependant, null, '\t') + '\n');
 		}
 	}
 
-	debug('Patching', config.target, 'v' + version, 'using', patchPath);
-	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(config.targetPath));
-	console.log(applied ? 'Patched' : 'Skipped', styleText('bold', config.target), 'v' + version, 'using', patchPath);
-}
-
-/** Subpatch configuration in package.json */
-export interface PackageJsonConfig {
-	/** If set, use the built-in `npm patch` functionality. */
-	usePatchedDependencies: boolean;
-	/** Map of specifier to patch path */
-	patches: Record<string, string>;
-}
-
-/**
- *
- * @param directory Directory containing node_modules and root package.json for the dependency
- * @param source specifier for the dependency
- */
-export function parseDependency(directory: string, source: string, onMissing: (info: Omit<PatchConfig, 'patchFile'>) => any): PatchConfig[] {
-	const path = resolvePackage(directory, source);
-
-	if (!path || !existsSync(path)) throw new Error('Can not find package.json');
-
-	const pkg = JSON.parse(readFileSync(path, 'utf8'));
-
-	if (!pkg.subpatch) return [];
-
-	const { patches, usePatchedDependencies } = pkg.subpatch as PackageJsonConfig;
-
-	const configs: PatchConfig[] = [];
-	for (const [target, patchFiles] of Object.entries(patches)) {
-		const targetPath = findPackage(target, path, join(directory, 'package.json')) || '';
-
-		if (!targetPath) {
-			onMissing({ source: pkg.name, target, directory, targetPath, usePatchedDependencies });
-			continue;
-		}
-
-		for (const patchFile of Array.isArray(patchFiles) ? patchFiles : [patchFiles]) {
-			const config = { source, target, directory, patchFile, usePatchedDependencies, targetPath };
-			configs.push(config);
-		}
-	}
-	return configs;
+	io.debug('Patching', patch.target, 'v' + patch.targetVersion, 'using', patchPath);
+	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(patch.targetPath));
+	console.log(applied ? 'Patched' : styleText('yellow', 'Skipped'), styleText('bold', patch.target), 'v' + patch.targetVersion, 'using', patchPath);
 }

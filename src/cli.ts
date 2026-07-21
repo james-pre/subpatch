@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-import { parseArgs, type ParseArgsConfig } from 'node:util';
-import { detectDirectory, parseDependency, patchDependent } from './api.js';
+import { dirname } from 'node:path';
+import { parseArgs, styleText, type ParseArgsConfig } from 'node:util';
+import { formatPatch, patchDependent } from './api.js';
+import { parseDependency } from './config.js';
 import * as io from './io.js';
+
+const defaultDirectory = process.env.INIT_CWD || process.cwd();
 
 const parseArgsConfig = {
 	options: {
-		directory: { short: 'd', type: 'string', default: detectDirectory() },
+		directory: { short: 'd', type: 'string', default: defaultDirectory },
 		debug: { type: 'boolean' },
 		help: { short: 'h', type: 'boolean' },
 	},
@@ -21,7 +25,7 @@ Commands:
     help        Show this help message
 
 Options:
-    -d, --directory <path>  The directory to work with, like npm prefix. (default=${detectDirectory()})
+    -d, --directory <path>  The directory to work with, like npm prefix. (default=${defaultDirectory})
     --debug                 Show debug output
     -h, --help              Show this help message
 `;
@@ -45,13 +49,19 @@ if (options.help) {
 
 io.debug(`INIT_CWD=${JSON.stringify(process.env.INIT_CWD)}, cwd=${JSON.stringify(process.cwd())}, directory=${JSON.stringify(options.directory)}`);
 
-const patches = parseDependency(options.directory, process.cwd(), info => io.warn('Missing dependency', JSON.stringify(info.target), 'of', JSON.stringify(info.source)));
+const { patches, patchesDir } = parseDependency(options.directory, process.cwd(), info =>
+	io.warn('Missing dependency', JSON.stringify(info.target), 'of', JSON.stringify(info.source))
+);
 
 switch (args[0] ?? 'apply') {
 	case 'ls':
 	case 'list':
-		for (const patch of patches) {
-			console.log(patch.source, '->', patch.target, ':', patch.patchFile);
+		for (const [target, targetPatches] of Object.entries(Object.groupBy(patches, p => p.target))) {
+			if (!targetPatches?.length) continue;
+			const targetDir = dirname(targetPatches[0].targetPath),
+				{ targetVersion } = targetPatches[0];
+			console.log(styleText('bold', target) + styleText('dim', '@' + targetVersion), '->', styleText('dim', targetDir));
+			for (const patch of targetPatches) console.log('    ' + formatPatch(patch, patchesDir));
 		}
 		break;
 	case 'apply':

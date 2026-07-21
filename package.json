@@ -38,7 +38,8 @@
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
-		"@types/node": "^24.0.0",
+		"@types/node": "^25.0.0",
+		"@types/semver": "^7.7.1",
 		"eslint": "^10.1.0",
 		"globals": "^17.7.0",
 		"prettier": "^3.4.1",
@@ -54,6 +55,7 @@
 		"arrowParens": "avoid"
 	},
 	"dependencies": {
-		"diff": "^9.0.0"
+		"diff": "^9.0.0",
+		"semver": "^7.8.5"
 	}
 }
