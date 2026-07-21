@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { formatPatch, formatPackage, patchDependent } from './api.js';
-import { parseDependency } from './config.js';
+import { parseDependency } from './dependency.js';
 import * as io from './io.js';
 
 const defaultDirectory = process.env.INIT_CWD || process.cwd();
