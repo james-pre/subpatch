@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"module": "NodeNext",
+		"target": "ES2020",
+		"rootDir": "src",
+		"outDir": "dist",
+		"lib": ["ESNext", "ESNext.Disposable"],
+		"moduleResolution": "NodeNext",
+		"strict": true,
+		"types": ["node"]
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules"]
+}

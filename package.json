@@ -1,0 +1,59 @@
+{
+	"name": "subpatch",
+	"version": "0.0.1",
+	"description": "Patch your dependencies in dependents (and more)",
+	"license": "LGPL-3.0-or-later",
+	"keywords": [],
+	"bin": {
+		"subpatch": "dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"LICENSE.md"
+	],
+	"type": "module",
+	"homepage": "https://github.com/james-pre/subpatch",
+	"author": "James Prevett <jp@jamespre.dev> (https://jamespre.dev)",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/james-pre/subpatch.git"
+	},
+	"bugs": {
+		"url": "https://github.com/james-pre/subpatch/issues"
+	},
+	"engines": {
+		"node": ">= 22",
+		"npm": ">= 12"
+	},
+	"exports": {
+		".": "./dist/index.js",
+		"./*": "./dist/*"
+	},
+	"scripts": {
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"lint": "tsc -p tsconfig.json --noEmit && eslint src",
+		"build": "tsc -p tsconfig.json",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@eslint/js": "^10.0.1",
+		"@types/node": "^24.0.0",
+		"eslint": "^10.1.0",
+		"globals": "^17.7.0",
+		"prettier": "^3.4.1",
+		"typescript": "^6.0.2",
+		"typescript-eslint": "^8.58.0"
+	},
+	"prettier": {
+		"singleQuote": true,
+		"useTabs": true,
+		"trailingComma": "es5",
+		"tabWidth": 4,
+		"printWidth": 180,
+		"arrowParens": "avoid"
+	},
+	"optionalDependencies": {
+		"@npmcli/arborist": "^10.0.1"
+	}
+}
