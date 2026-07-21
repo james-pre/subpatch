@@ -49,7 +49,7 @@ export function patchDependent(config: PatchConfig) {
 		}
 	}
 
-	console.log('Patching', styleText(['bold', 'dim'], config.target), 'v' + version, 'using', patchPath);
+	console.log('Patching', styleText('bold', config.target), 'v' + version, 'using', patchPath);
 	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(targetPath));
 }
 
