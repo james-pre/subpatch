@@ -45,7 +45,7 @@ if (options.help) {
 
 io.debug(`INIT_CWD=${JSON.stringify(process.env.INIT_CWD)}, cwd=${JSON.stringify(process.cwd())}, directory=${JSON.stringify(options.directory)}`);
 
-const patches = parseDependency(options.directory, process.cwd(), io.warn);
+const patches = parseDependency(options.directory, process.cwd(), info => io.warn('Missing dependency', JSON.stringify(info.target), 'of', JSON.stringify(info.source)));
 
 switch (args[0] ?? 'apply') {
 	case 'ls':

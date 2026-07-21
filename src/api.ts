@@ -84,7 +84,7 @@ export interface PackageJsonConfig {
  * @param directory Directory containing node_modules and root package.json for the dependency
  * @param source specifier for the dependency
  */
-export function parseDependency(directory: string, source: string, onMissing: (info: PatchConfig) => any): PatchConfig[] {
+export function parseDependency(directory: string, source: string, onMissing: (info: Omit<PatchConfig, 'patchFile'>) => any): PatchConfig[] {
 	const path = resolvePackage(directory, source);
 
 	if (!path || !existsSync(path)) throw new Error('Can not find package.json');
@@ -96,16 +96,18 @@ export function parseDependency(directory: string, source: string, onMissing: (i
 	const { patches, usePatchedDependencies } = pkg.subpatch as PackageJsonConfig;
 
 	const configs: PatchConfig[] = [];
-	for (const [target, patchFile] of Object.entries(patches)) {
+	for (const [target, patchFiles] of Object.entries(patches)) {
 		const targetPath = findPackage(target, path, join(directory, 'package.json')) || '';
-		const config = { source, target, directory, patchFile, usePatchedDependencies, targetPath };
 
 		if (!targetPath) {
-			onMissing(config);
+			onMissing({ source: pkg.name, target, directory, targetPath, usePatchedDependencies });
 			continue;
 		}
 
-		configs.push(config);
+		for (const patchFile of Array.isArray(patchFiles) ? patchFiles : [patchFiles]) {
+			const config = { source, target, directory, patchFile, usePatchedDependencies, targetPath };
+			configs.push(config);
+		}
 	}
 	return configs;
 }
