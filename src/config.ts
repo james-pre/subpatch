@@ -34,7 +34,7 @@ export function parsePatchInit(init: PackageJsonPatch): PatchInit[] {
 }
 
 /** Subpatch configuration in package.json */
-export interface PackageJsonConfig {
+export interface DependencyConfig {
 	/** If set, use the built-in `npm patch` functionality. */
 	usePatchedDependencies?: boolean;
 	/** Map of specifier to patch path */
@@ -46,6 +46,8 @@ export interface PackageJsonConfig {
 export interface ParsedDependency {
 	/** Specifier for the resolved dependency */
 	source: string;
+	/** Path to the resolved dependency */
+	sourceDir: string;
 	patches: Patch[];
 	/** If set, patch paths were resolved relative to this directory */
 	patchesDir?: string;
@@ -56,28 +58,31 @@ export interface MissingDependencyPatchInfo extends Omit<Patch, 'path' | 'target
 
 /**
  * @param rootDir Directory containing node_modules and root package.json for the dependency
- * @param source specifier for the dependency
+ * @param sourceInit specifier or path for the dependency
  */
-export function parseDependency(rootDir: string, source: string, onMissing: (info: MissingDependencyPatchInfo) => unknown): ParsedDependency {
-	const pkgPath = resolvePackage(rootDir, source);
+export function parseDependency(rootDir: string, sourceInit: string, onMissing: (info: MissingDependencyPatchInfo) => unknown): ParsedDependency {
+	const sourcePath = resolvePackage(rootDir, sourceInit);
 
-	if (!pkgPath || !existsSync(pkgPath)) throw new Error('Can not find package.json');
+	if (!sourcePath || !existsSync(sourcePath)) throw new Error('Can not find package.json');
 
-	const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+	const pkg = JSON.parse(readFileSync(sourcePath, 'utf8'));
 
-	if (!pkg.subpatch) return { source, patches: [] };
+	const source = pkg.name,
+		sourceDir = dirname(sourcePath);
 
-	const { patches: _patches, usePatchedDependencies, directory: patchesDir } = pkg.subpatch as PackageJsonConfig;
+	if (!pkg.subpatch) return { source, sourceDir, patches: [] };
+
+	const { patches: _patches, usePatchedDependencies, directory: patchesDir } = pkg.subpatch as DependencyConfig;
 
 	const optionsConfig: Patch[] = [];
 	for (const [target, patchesInit] of Object.entries(_patches)) {
-		const targetPath = findPackage(target, pkgPath, join(rootDir, 'package.json')) || '',
+		const targetPath = findPackage(target, sourcePath, join(rootDir, 'package.json')) || '',
 			targetDir = dirname(targetPath);
 
 		const patchConfigs = parsePatchInit(patchesInit);
 
 		if (!targetPath) {
-			if (patchConfigs.every(p => p.optional)) onMissing({ source: pkg.name, target, rootDir, targetDir, usePatchedDependencies });
+			if (patchConfigs.every(p => p.optional)) onMissing({ source, sourceDir, target, rootDir, targetDir, usePatchedDependencies });
 			else io.warn(`Skipping optional patches for missing dependency "${target}": ${patchConfigs.map(p => p.path).join(', ')}`);
 			continue;
 		}
@@ -91,13 +96,9 @@ export function parseDependency(rootDir: string, source: string, onMissing: (inf
 				continue;
 			}
 
-			optionsConfig.push({ ...patchConfig, source, target, rootDir, path, usePatchedDependencies, targetDir, targetVersion });
+			optionsConfig.push({ ...patchConfig, sourceDir, target, rootDir, path, usePatchedDependencies, targetDir, targetVersion });
 		}
 	}
 
-	return {
-		source,
-		patches: optionsConfig,
-		patchesDir,
-	};
+	return { source, sourceDir, patches: optionsConfig, patchesDir };
 }

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-import { relative } from 'node:path';
-import { parseArgs, styleText, type ParseArgsConfig } from 'node:util';
-import { formatPatch, patchDependent } from './api.js';
+import { parseArgs, type ParseArgsConfig } from 'node:util';
+import { formatPatch, formatPatchTarget, patchDependent } from './api.js';
 import { parseDependency } from './config.js';
 import * as io from './io.js';
 
@@ -56,11 +55,9 @@ const { patches, patchesDir } = parseDependency(options.directory, process.cwd()
 switch (args[0] ?? 'apply') {
 	case 'ls':
 	case 'list':
-		for (const [target, targetPatches] of Object.entries(Object.groupBy(patches, p => p.target))) {
+		for (const targetPatches of Object.values(Object.groupBy(patches, p => p.target))) {
 			if (!targetPatches?.length) continue;
-			const { targetDir, targetVersion } = targetPatches[0];
-			const relTarget = relative(options.directory, targetDir);
-			console.log(styleText('bold', target) + styleText('dim', '@' + targetVersion), '->', styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget));
+			console.log(formatPatchTarget(targetPatches[0]));
 			for (const patch of targetPatches) console.log('    ' + formatPatch(patch, patchesDir));
 		}
 		break;

@@ -14,10 +14,12 @@ export interface PatchInit {
 }
 
 export interface Patch extends PatchInit {
-	/** Path for the dependent of the dependency to be patched */
-	source: string;
 	/** Directory containing node_modules and root package.json */
 	rootDir: string;
+	/** Path to the dependent of the dependency to be patched */
+	sourceDir: string;
+	/** Specifier for the dependent of the dependency to be patched */
+	source?: string;
 	/** Specifier for the dependency to be patched */
 	target: string;
 	/** If set, use the built-in `npm patch` functionality. */
@@ -37,10 +39,16 @@ export function formatPatch(patch: Patch, patchesDir?: string): string {
 	return text;
 }
 
+export function formatPatchTarget(patch: Patch): string {
+	const { rootDir, target, targetDir, targetVersion } = patch;
+	const relTarget = relative(rootDir, targetDir);
+	return `${styleText('bold', target)}${styleText('dim', '@' + targetVersion)} -> ${styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget)}`;
+}
+
 export function patchDependent(patch: Patch) {
 	const root = join(patch.rootDir, 'package.json');
 
-	const patchPath = resolve('node_modules', patch.source, patch.path);
+	const patchPath = resolve('node_modules', patch.sourceDir, patch.path);
 
 	if (patch.usePatchedDependencies) {
 		const dependant = JSON.parse(readFileSync(root, 'utf8'));
