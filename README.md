@@ -10,11 +10,12 @@ example-dependent
   └── dependency-needing-patch <-- need to patch this one
 ```
 
-You can use subpatch by adding a postinstall script and then defining the patches you want to be applied in the `subpatch` field in your package.json:
+You can use subpatch by adding a prepare (for development) and postinstall (for production) script and then defining the patches you want to be applied in the `subpatch` field in your package.json:
 
 ```json
 {
 	"scripts": {
+		"prepare": "subpatch",
 		"postinstall": "subpatch"
 	},
 	"subpatch": {
