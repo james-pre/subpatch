@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { debug } from './io.js';
 import { styleText } from 'node:util';
 
@@ -62,7 +62,7 @@ export async function patchDependent(config: PatchConfig) {
 	const pkg = JSON.parse(readFileSync(targetPath, 'utf8'));
 	const { version } = pkg;
 
-	const patchPath = join('node_modules', config.source, config.patchFile);
+	const patchPath = resolve('node_modules', config.source, config.patchFile);
 
 	if (config.usePatchedDependencies) {
 		const dependant = JSON.parse(readFileSync(root, 'utf8'));
