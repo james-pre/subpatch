@@ -75,7 +75,7 @@ export async function patchDependent(config: PatchConfig) {
 	}
 
 	debug('Patching', styleText(['bold', 'dim'], config.target), 'v' + version, 'using', patchPath);
-	await arboristPatch.applyPatchToDir({ patch: config.patchFile, cwd: dirname(targetPath) });
+	await arboristPatch.applyPatchToDir({ patch: readFileSync(patchPath, 'utf8'), cwd: dirname(targetPath) });
 }
 
 /** Subpatch configuration in package.json */
