@@ -116,7 +116,7 @@ export function applyPatchToDir(patch: string, cwd: string): boolean {
 		}
 	}
 
-	if (applied || skipped) io.warn('Patch was only partially applied, some files where already patched');
+	if (applied && skipped) io.warn('Patch was only partially applied, some files where already patched');
 
 	return !!applied;
 }
