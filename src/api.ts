@@ -10,7 +10,7 @@ interface ArboristPatch {
 
 let arboristPatch: ArboristPatch = {
 	applyPatchToDir() {
-		throw new Error('Can not find a valid installation of @npmcli/arborist');
+		throw new Error('Can not find a valid installation of @npmcli/arborist, you may need to install it.');
 	},
 };
 
