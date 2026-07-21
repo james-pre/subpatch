@@ -16,6 +16,22 @@ export function resolvePackage(directory: string, specifierOrPath: string): stri
 	return existsSync(pkgJson) ? pkgJson : findPackageJSON(specifierOrPath, join(directory, 'package.json'));
 }
 
+/**
+ * Resolve a package's `package.json` by trying each base in order.
+ * `findPackageJSON` throws `ERR_MODULE_NOT_FOUND` when a specifier can't be resolved from a base,
+ * so each attempt is guarded and we move on to the next base.
+ */
+function findPackage(specifier: string, ...bases: string[]): string | undefined {
+	for (const base of bases) {
+		try {
+			const path = findPackageJSON(specifier, base);
+			if (path) return path;
+		} catch {
+			// Not resolvable from this base; try the next one.
+		}
+	}
+}
+
 export interface PatchConfig {
 	/** Path for the dependent of the dependency to be patched */
 	source: string;
@@ -27,14 +43,14 @@ export interface PatchConfig {
 	patchFile: string;
 	/** If set, use the built-in `npm patch` functionality. */
 	usePatchedDependencies: boolean;
+	/** Resolved path to the target dependency's `package.json` */
+	targetPath: string;
 }
 
 export function patchDependent(config: PatchConfig) {
 	const root = join(config.directory, 'package.json');
 
-	const targetPath = findPackageJSON(config.target, root);
-	if (!targetPath) throw new Error('Target package not found');
-	const pkg = JSON.parse(readFileSync(targetPath, 'utf8'));
+	const pkg = JSON.parse(readFileSync(config.targetPath, 'utf8'));
 	const { version } = pkg;
 
 	const patchPath = resolve('node_modules', config.source, config.patchFile);
@@ -50,7 +66,7 @@ export function patchDependent(config: PatchConfig) {
 	}
 
 	console.log('Patching', styleText('bold', config.target), 'v' + version, 'using', patchPath);
-	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(targetPath));
+	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(config.targetPath));
 }
 
 /** Subpatch configuration in package.json */
@@ -79,10 +95,10 @@ export function parseDependency(directory: string, source: string, onMissing: (i
 
 	const configs: PatchConfig[] = [];
 	for (const [target, patchFile] of Object.entries(patches)) {
-		const config = { source, target, directory, patchFile, usePatchedDependencies };
+		const targetPath = findPackage(target, path, join(directory, 'package.json')) || '';
+		const config = { source, target, directory, patchFile, usePatchedDependencies, targetPath };
 
-		const depPath = findPackageJSON(target, join(directory, 'package.json'));
-		if (!depPath) {
+		if (!targetPath) {
 			onMissing(config);
 			continue;
 		}
