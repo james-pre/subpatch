@@ -39,10 +39,14 @@ export function formatPatch(patch: Patch, patchesDir?: string): string {
 	return text;
 }
 
-export function formatPatchTarget(patch: Patch): string {
+export function formatPatchTarget(patch: Patch, includePath?: boolean): string {
 	const { rootDir, target, targetDir, targetVersion } = patch;
-	const relTarget = relative(rootDir, targetDir);
-	return `${styleText('bold', target)}${styleText('dim', '@' + targetVersion)} -> ${styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget)}`;
+	let text = styleText('bold', target) + styleText('dim', '@' + targetVersion);
+	if (includePath) {
+		const relTarget = relative(rootDir, targetDir);
+		text += `-> ${styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget)}`;
+	}
+	return text;
 }
 
 export function patchDependent(patch: Patch) {

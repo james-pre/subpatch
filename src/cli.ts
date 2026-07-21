@@ -46,11 +46,14 @@ if (options.help) {
 	process.exit(0);
 }
 
-io.debug(`INIT_CWD=${JSON.stringify(process.env.INIT_CWD)}, cwd=${JSON.stringify(process.cwd())}, directory=${JSON.stringify(options.directory)}`);
+const debugValues = [
+	['INIT_CWD', process.env.INIT_CWD],
+	['cwd', process.cwd()],
+	['directory', options.directory],
+];
+io.debug(debugValues.map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(', '));
 
-const { patches, patchesDir } = parseDependency(options.directory, process.cwd(), info =>
-	io.warn('Missing dependency', JSON.stringify(info.target), 'of', JSON.stringify(info.source))
-);
+const { patches, patchesDir } = parseDependency(options.directory, process.cwd());
 
 switch (args[0] ?? 'apply') {
 	case 'ls':

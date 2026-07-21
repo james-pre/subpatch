@@ -15,7 +15,7 @@ export function resolvePackage(rootDir: string, specifierOrPath: string): string
  * `findPackageJSON` throws `ERR_MODULE_NOT_FOUND` when a specifier can't be resolved from a base,
  * so each attempt is guarded and we move on to the next base.
  */
-function findPackage(specifier: string, ...bases: string[]): string | undefined {
+export function findPackage(specifier: string, ...bases: string[]): string | undefined {
 	for (const base of bases) {
 		try {
 			const path = findPackageJSON(specifier, base);
@@ -54,7 +54,15 @@ export interface ParsedDependency {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface MissingDependencyPatchInfo extends Omit<Patch, 'path' | 'targetVersion'> {}
+export interface ParseDependencyCallbackInfo extends Omit<Patch, 'path' | 'targetVersion'> {}
+
+export interface ParseDependencyCallback {
+	(info: ParseDependencyCallbackInfo): unknown;
+}
+
+function defaultMissingCallback(info: ParseDependencyCallbackInfo) {
+	io.warn('Missing dependency', JSON.stringify(info.target), 'of', JSON.stringify(info.source));
+}
 
 /**
  * @param rootDir Directory containing node_modules and root package.json for the dependency
@@ -63,7 +71,7 @@ export interface MissingDependencyPatchInfo extends Omit<Patch, 'path' | 'target
 export function parseDependency(
 	rootDir: string,
 	sourceInit: string,
-	onMissing: (info: MissingDependencyPatchInfo) => unknown
+	onMissing: ParseDependencyCallback = defaultMissingCallback
 ): ParsedDependency {
 	const sourcePath = resolvePackage(rootDir, sourceInit);
 
