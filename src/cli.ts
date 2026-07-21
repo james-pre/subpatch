@@ -55,7 +55,7 @@ switch (args[0] ?? 'apply') {
 		}
 		break;
 	case 'apply':
-		for (const patch of patches) await patchDependent(patch);
+		for (const patch of patches) patchDependent(patch);
 		break;
 	case 'help':
 		console.log(usageText);
