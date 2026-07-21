@@ -60,7 +60,11 @@ export interface MissingDependencyPatchInfo extends Omit<Patch, 'path' | 'target
  * @param rootDir Directory containing node_modules and root package.json for the dependency
  * @param sourceInit specifier or path for the dependency
  */
-export function parseDependency(rootDir: string, sourceInit: string, onMissing: (info: MissingDependencyPatchInfo) => unknown): ParsedDependency {
+export function parseDependency(
+	rootDir: string,
+	sourceInit: string,
+	onMissing: (info: MissingDependencyPatchInfo) => unknown
+): ParsedDependency {
 	const sourcePath = resolvePackage(rootDir, sourceInit);
 
 	if (!sourcePath || !existsSync(sourcePath)) throw new Error('Can not find package.json');
@@ -82,8 +86,12 @@ export function parseDependency(rootDir: string, sourceInit: string, onMissing: 
 		const patchConfigs = parsePatchInit(patchesInit);
 
 		if (!targetPath) {
-			if (patchConfigs.every(p => p.optional)) onMissing({ source, sourceDir, target, rootDir, targetDir, usePatchedDependencies });
-			else io.warn(`Skipping optional patches for missing dependency "${target}": ${patchConfigs.map(p => p.path).join(', ')}`);
+			if (patchConfigs.every(p => p.optional))
+				onMissing({ source, sourceDir, target, rootDir, targetDir, usePatchedDependencies });
+			else
+				io.warn(
+					`Skipping optional patches for missing dependency "${target}": ${patchConfigs.map(p => p.path).join(', ')}`
+				);
 			continue;
 		}
 
@@ -96,7 +104,16 @@ export function parseDependency(rootDir: string, sourceInit: string, onMissing: 
 				continue;
 			}
 
-			optionsConfig.push({ ...patchConfig, sourceDir, target, rootDir, path, usePatchedDependencies, targetDir, targetVersion });
+			optionsConfig.push({
+				...patchConfig,
+				sourceDir,
+				target,
+				rootDir,
+				path,
+				usePatchedDependencies,
+				targetDir,
+				targetVersion,
+			});
 		}
 	}
 

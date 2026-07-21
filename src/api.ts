@@ -62,5 +62,11 @@ export function patchDependent(patch: Patch) {
 
 	io.debug('Patching', patch.target, 'v' + patch.targetVersion, 'using', patchPath);
 	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.targetDir);
-	console.log(applied ? 'Patched' : styleText('yellow', 'Skipped'), styleText('bold', patch.target), 'v' + patch.targetVersion, 'using', patchPath);
+	console.log(
+		applied ? 'Patched' : styleText('yellow', 'Skipped'),
+		styleText('bold', patch.target),
+		'v' + patch.targetVersion,
+		'using',
+		patchPath
+	);
 }

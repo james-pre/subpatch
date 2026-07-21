@@ -11,7 +11,8 @@ const stripPrefix = (file?: string) => file?.replace(/^[ab]\//, '') || '';
 // True when a diff path points at /dev/null, signalling a file add or delete.
 const isDevNull = (file?: string) => !file || file === '/dev/null' || /(^|\/)\.dev\/null$/.test(file);
 
-const patchError = (message: string, file: string, code: string = 'EPATCHFAILED') => Object.assign(new Error(message), { code, file });
+const patchError = (message: string, file: string, code: string = 'EPATCHFAILED') =>
+	Object.assign(new Error(message), { code, file });
 
 // Resolve a diff path under cwd and refuse anything that escapes the package directory.
 function containedTarget(cwd: string, file: string) {
