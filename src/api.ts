@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
-import { debug } from './io.js';
 import { styleText } from 'node:util';
 import { applyPatchToDir } from './patch.js';
 
@@ -50,7 +49,7 @@ export function patchDependent(config: PatchConfig) {
 		}
 	}
 
-	debug('Patching', styleText(['bold', 'dim'], config.target), 'v' + version, 'using', patchPath);
+	console.log('Patching', styleText(['bold', 'dim'], config.target), 'v' + version, 'using', patchPath);
 	applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(targetPath));
 }
 
