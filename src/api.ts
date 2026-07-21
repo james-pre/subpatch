@@ -21,9 +21,10 @@ export interface PackageInfo {
 	version?: string;
 }
 
-export function formatPackage(rootDir: string, target: PackageInfo, includePath?: boolean): string {
-	let text = styleText('bold', target.name) + styleText('dim', '@' + target.version);
-	if (includePath) {
+export function formatPackage(target: PackageInfo, rootDir?: string): string {
+	let text = styleText('bold', target.name);
+	if (target.version) text += styleText('dim', '@' + target.version);
+	if (rootDir) {
 		const relTarget = relative(rootDir, target.dir);
 		text += `-> ${styleText('dim', relTarget.startsWith('../') ? target.dir : relTarget)}`;
 	}
@@ -72,4 +73,18 @@ export function patchDependent(patch: Patch) {
 		'using',
 		patchPath
 	);
+}
+
+export interface PatchedPackageInfo extends PackageInfo {
+	/** The patches applied to this package */
+	patches: Patch[];
+}
+
+export function groupByTarget(patches: Patch[]): PatchedPackageInfo[] {
+	const targets: PatchedPackageInfo[] = [];
+	for (const targetPatches of Object.values(Object.groupBy(patches, p => p.target.name))) {
+		if (!targetPatches?.length) continue;
+		targets.push({ ...targetPatches[0].target, patches: targetPatches });
+	}
+	return targets;
 }

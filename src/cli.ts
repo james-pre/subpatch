@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs, type ParseArgsConfig } from 'node:util';
-import { formatPatch, formatPackage, patchDependent } from './api.js';
+import { formatPatch, formatPackage, patchDependent, groupByTarget } from './api.js';
 import { parseDependency } from './config.js';
 import * as io from './io.js';
 
@@ -58,10 +58,9 @@ const { patches, patchesDir } = parseDependency(options.directory, process.cwd()
 switch (args[0] ?? 'apply') {
 	case 'ls':
 	case 'list':
-		for (const targetPatches of Object.values(Object.groupBy(patches, p => p.target))) {
-			if (!targetPatches?.length) continue;
-			console.log(formatPackage(options.directory, targetPatches[0].target));
-			for (const patch of targetPatches) console.log('    ' + formatPatch(patch, patchesDir));
+		for (const target of groupByTarget(patches)) {
+			console.log(formatPackage(target));
+			for (const patch of target.patches) console.log('    ' + formatPatch(patch, patchesDir));
 		}
 		break;
 	case 'apply':
