@@ -21,7 +21,7 @@ export function error(...args: unknown[]) {
 }
 
 export function warn(...args: unknown[]) {
-	console.error(...maybeStyle('red', args));
+	console.error(...maybeStyle('yellow', args));
 }
 
 export function errorText(error: unknown) {
