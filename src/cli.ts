@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { dirname } from 'node:path';
+import { relative } from 'node:path';
 import { parseArgs, styleText, type ParseArgsConfig } from 'node:util';
 import { formatPatch, patchDependent } from './api.js';
 import { parseDependency } from './config.js';
@@ -58,9 +58,9 @@ switch (args[0] ?? 'apply') {
 	case 'list':
 		for (const [target, targetPatches] of Object.entries(Object.groupBy(patches, p => p.target))) {
 			if (!targetPatches?.length) continue;
-			const targetDir = dirname(targetPatches[0].targetPath),
-				{ targetVersion } = targetPatches[0];
-			console.log(styleText('bold', target) + styleText('dim', '@' + targetVersion), '->', styleText('dim', targetDir));
+			const { targetDir, targetVersion } = targetPatches[0];
+			const relTarget = relative(options.directory, targetDir);
+			console.log(styleText('bold', target) + styleText('dim', '@' + targetVersion), '->', styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget));
 			for (const patch of targetPatches) console.log('    ' + formatPatch(patch, patchesDir));
 		}
 		break;

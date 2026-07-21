@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { styleText } from 'node:util';
 import * as io from './io.js';
 import { applyPatchToDir } from './patch.js';
@@ -17,7 +17,7 @@ export interface Patch extends PatchInit {
 	/** Path for the dependent of the dependency to be patched */
 	source: string;
 	/** Directory containing node_modules and root package.json */
-	directory: string;
+	rootDir: string;
 	/** Specifier for the dependency to be patched */
 	target: string;
 	/** If set, use the built-in `npm patch` functionality. */
@@ -25,7 +25,7 @@ export interface Patch extends PatchInit {
 
 	// These are for re-using already computed values.
 	/** Resolved path to the target dependency's `package.json` */
-	targetPath: string;
+	targetDir: string;
 	/** The version of the target dependency */
 	targetVersion: string;
 }
@@ -38,7 +38,7 @@ export function formatPatch(patch: Patch, patchesDir?: string): string {
 }
 
 export function patchDependent(patch: Patch) {
-	const root = join(patch.directory, 'package.json');
+	const root = join(patch.rootDir, 'package.json');
 
 	const patchPath = resolve('node_modules', patch.source, patch.path);
 
@@ -53,6 +53,6 @@ export function patchDependent(patch: Patch) {
 	}
 
 	io.debug('Patching', patch.target, 'v' + patch.targetVersion, 'using', patchPath);
-	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), dirname(patch.targetPath));
+	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.targetDir);
 	console.log(applied ? 'Patched' : styleText('yellow', 'Skipped'), styleText('bold', patch.target), 'v' + patch.targetVersion, 'using', patchPath);
 }

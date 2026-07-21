@@ -1,13 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { satisfies as satisfiesSemver } from 'semver';
 import type { Patch, PatchInit } from './api.js';
 import * as io from './io.js';
 
-export function resolvePackage(directory: string, specifierOrPath: string): string | undefined {
+export function resolvePackage(rootDir: string, specifierOrPath: string): string | undefined {
 	const pkgJson = join(specifierOrPath, 'package.json');
-	return existsSync(pkgJson) ? pkgJson : findPackageJSON(specifierOrPath, join(directory, 'package.json'));
+	return existsSync(pkgJson) ? pkgJson : findPackageJSON(specifierOrPath, join(rootDir, 'package.json'));
 }
 
 /**
@@ -55,11 +55,11 @@ export interface ParsedDependency {
 export interface MissingDependencyPatchInfo extends Omit<Patch, 'path' | 'targetVersion'> {}
 
 /**
- * @param directory Directory containing node_modules and root package.json for the dependency
+ * @param rootDir Directory containing node_modules and root package.json for the dependency
  * @param source specifier for the dependency
  */
-export function parseDependency(directory: string, source: string, onMissing: (info: MissingDependencyPatchInfo) => unknown): ParsedDependency {
-	const pkgPath = resolvePackage(directory, source);
+export function parseDependency(rootDir: string, source: string, onMissing: (info: MissingDependencyPatchInfo) => unknown): ParsedDependency {
+	const pkgPath = resolvePackage(rootDir, source);
 
 	if (!pkgPath || !existsSync(pkgPath)) throw new Error('Can not find package.json');
 
@@ -71,12 +71,13 @@ export function parseDependency(directory: string, source: string, onMissing: (i
 
 	const optionsConfig: Patch[] = [];
 	for (const [target, patchesInit] of Object.entries(_patches)) {
-		const targetPath = findPackage(target, pkgPath, join(directory, 'package.json')) || '';
+		const targetPath = findPackage(target, pkgPath, join(rootDir, 'package.json')) || '',
+			targetDir = dirname(targetPath);
 
 		const patchConfigs = parsePatchInit(patchesInit);
 
 		if (!targetPath) {
-			if (patchConfigs.every(p => p.optional)) onMissing({ source: pkg.name, target, directory, targetPath, usePatchedDependencies });
+			if (patchConfigs.every(p => p.optional)) onMissing({ source: pkg.name, target, rootDir, targetDir, usePatchedDependencies });
 			else io.warn(`Skipping optional patches for missing dependency "${target}": ${patchConfigs.map(p => p.path).join(', ')}`);
 			continue;
 		}
@@ -90,7 +91,7 @@ export function parseDependency(directory: string, source: string, onMissing: (i
 				continue;
 			}
 
-			optionsConfig.push({ ...patchConfig, source, target, directory, path, usePatchedDependencies, targetPath, targetVersion });
+			optionsConfig.push({ ...patchConfig, source, target, rootDir, path, usePatchedDependencies, targetDir, targetVersion });
 		}
 	}
 
