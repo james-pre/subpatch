@@ -2,6 +2,7 @@
 import { parseArgs, type ParseArgsConfig } from 'node:util';
 import { formatPatch, formatPackage, patchDependent } from './api.js';
 import { parseDependency } from './dependency.js';
+import { buildDependencyTree, formatDependencyTree } from './tree.js';
 import * as io from './io.js';
 
 const defaultDirectory = process.env.INIT_CWD || process.cwd();
@@ -21,6 +22,7 @@ const usageText = `Usage: subpatch [command] [options]
 Commands:
     [apply]     Apply configured patches (default)
     ls, list    List configured patches
+    tree        Show all subpatch patches, including in dependencies
     help        Show this help message
 
 Options:
@@ -56,6 +58,11 @@ io.debug(debugValues.map(([key, value]) => `${key}=${JSON.stringify(value)}`).jo
 const { patches, patchesDir, targets } = parseDependency(options.directory, process.cwd());
 
 switch (args[0] ?? 'apply') {
+	case 'tree': {
+		const tree = buildDependencyTree(options.directory, process.cwd());
+		for (const line of formatDependencyTree(tree, patchesDir)) console.log(line);
+		break;
+	}
 	case 'ls':
 	case 'list':
 		for (const target of targets) {
