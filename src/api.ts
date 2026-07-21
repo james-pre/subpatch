@@ -13,23 +13,32 @@ export interface PatchInit {
 	version?: string;
 }
 
+export interface PackageInfo {
+	/** Specifier */
+	name: string;
+	/** Usually in node_modules */
+	dir: string;
+	version?: string;
+}
+
+export function formatPackage(rootDir: string, target: PackageInfo, includePath?: boolean): string {
+	let text = styleText('bold', target.name) + styleText('dim', '@' + target.version);
+	if (includePath) {
+		const relTarget = relative(rootDir, target.dir);
+		text += `-> ${styleText('dim', relTarget.startsWith('../') ? target.dir : relTarget)}`;
+	}
+	return text;
+}
+
 export interface Patch extends PatchInit {
 	/** Directory containing node_modules and root package.json */
 	rootDir: string;
-	/** Path to the dependent of the dependency to be patched */
-	sourceDir: string;
-	/** Specifier for the dependent of the dependency to be patched */
-	source?: string;
-	/** Specifier for the dependency to be patched */
-	target: string;
+	/** The dependent of the dependency to be patched */
+	source: PackageInfo;
+	/** The dependency to be patched */
+	target: PackageInfo;
 	/** If set, use the built-in `npm patch` functionality. */
 	usePatchedDependencies?: boolean;
-
-	// These are for re-using already computed values.
-	/** Resolved path to the target dependency's `package.json` */
-	targetDir: string;
-	/** The version of the target dependency */
-	targetVersion: string;
 }
 
 export function formatPatch(patch: Patch, patchesDir?: string): string {
@@ -39,37 +48,27 @@ export function formatPatch(patch: Patch, patchesDir?: string): string {
 	return text;
 }
 
-export function formatPatchTarget(patch: Patch, includePath?: boolean): string {
-	const { rootDir, target, targetDir, targetVersion } = patch;
-	let text = styleText('bold', target) + styleText('dim', '@' + targetVersion);
-	if (includePath) {
-		const relTarget = relative(rootDir, targetDir);
-		text += `-> ${styleText('dim', relTarget.startsWith('../') ? targetDir : relTarget)}`;
-	}
-	return text;
-}
-
 export function patchDependent(patch: Patch) {
 	const root = join(patch.rootDir, 'package.json');
 
-	const patchPath = resolve('node_modules', patch.sourceDir, patch.path);
+	const patchPath = resolve('node_modules', patch.source.dir, patch.path);
 
 	if (patch.usePatchedDependencies) {
 		const dependant = JSON.parse(readFileSync(root, 'utf8'));
 		dependant.patchedDependencies ??= {};
-		const key = `${patch.target}@${patch.targetVersion}`;
+		const key = `${patch.target.name}@${patch.target.version}`;
 		if (dependant.patchedDependencies[key] !== patchPath) {
 			dependant.patchedDependencies[key] = patchPath;
 			writeFileSync(root, JSON.stringify(dependant, null, '\t') + '\n');
 		}
 	}
 
-	io.debug('Patching', patch.target, 'v' + patch.targetVersion, 'using', patchPath);
-	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.targetDir);
+	io.debug('Patching', patch.target.name, 'v' + patch.target.version, 'using', patchPath);
+	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.target.dir);
 	console.log(
 		applied ? 'Patched' : styleText('yellow', 'Skipped'),
-		styleText('bold', patch.target),
-		'v' + patch.targetVersion,
+		styleText('bold', patch.target.name),
+		'v' + patch.target.version,
 		'using',
 		patchPath
 	);

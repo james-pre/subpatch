@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs, type ParseArgsConfig } from 'node:util';
-import { formatPatch, formatPatchTarget, patchDependent } from './api.js';
+import { formatPatch, formatPackage, patchDependent } from './api.js';
 import { parseDependency } from './config.js';
 import * as io from './io.js';
 
@@ -60,7 +60,7 @@ switch (args[0] ?? 'apply') {
 	case 'list':
 		for (const targetPatches of Object.values(Object.groupBy(patches, p => p.target))) {
 			if (!targetPatches?.length) continue;
-			console.log(formatPatchTarget(targetPatches[0]));
+			console.log(formatPackage(options.directory, targetPatches[0].target));
 			for (const patch of targetPatches) console.log('    ' + formatPatch(patch, patchesDir));
 		}
 		break;
