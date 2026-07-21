@@ -19,7 +19,8 @@ You can use subpatch by adding a postinstall script and then defining the patche
 	},
 	"subpatch": {
 		"patches": {
-			"typescript": "patches/typescript-example-feature.patch"
+			"@sveltejs/kit": "patches/sveltekit-feature-a.patch",
+			"typescript": ["patches/typescript-a.patch", "patches/typescript-b.patch"]
 		}
 	}
 }
