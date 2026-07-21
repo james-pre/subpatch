@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { parseArgs, type ParseArgsConfig } from 'node:util';
-import { formatPatch, formatPackage, patchDependent, groupByTarget } from './api.js';
+import { formatPatch, formatPackage, patchDependent } from './api.js';
 import { parseDependency } from './config.js';
 import * as io from './io.js';
 
@@ -53,12 +53,12 @@ const debugValues = [
 ];
 io.debug(debugValues.map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(', '));
 
-const { patches, patchesDir } = parseDependency(options.directory, process.cwd());
+const { patches, patchesDir, targets } = parseDependency(options.directory, process.cwd());
 
 switch (args[0] ?? 'apply') {
 	case 'ls':
 	case 'list':
-		for (const target of groupByTarget(patches)) {
+		for (const target of targets) {
 			console.log(formatPackage(target));
 			for (const patch of target.patches) console.log('    ' + formatPatch(patch, patchesDir));
 		}

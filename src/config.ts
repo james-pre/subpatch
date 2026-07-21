@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { findPackageJSON } from 'node:module';
 import { dirname, join } from 'node:path';
 import { satisfies as satisfiesSemver } from 'semver';
-import type { PackageInfo, Patch, PatchInit } from './api.js';
+import type { PackageInfo, Patch, PatchedPackageInfo, PatchInit } from './api.js';
 import * as io from './io.js';
 
 export function resolvePackage(rootDir: string, specifierOrPath: string): string | undefined {
@@ -45,6 +45,7 @@ export interface DependencyConfig {
 
 export interface ParsedDependency extends PackageInfo {
 	patches: Patch[];
+	targets: PatchedPackageInfo[];
 	/** If set, patch paths were resolved relative to this directory */
 	patchesDir?: string;
 }
@@ -77,11 +78,12 @@ export function parseDependency(
 
 	const source = { name: pkg.name, version: pkg.version, dir: dirname(sourcePath) };
 
-	if (!pkg.subpatch) return { ...source, patches: [] };
+	if (!pkg.subpatch) return { ...source, targets: [], patches: [] };
 
 	const { patches: _patches, usePatchedDependencies, directory: patchesDir } = pkg.subpatch as DependencyConfig;
 
-	const optionsConfig: Patch[] = [];
+	const patches: Patch[] = [],
+		targets: PatchedPackageInfo[] = [];
 	for (const [name, patchesInit] of Object.entries(_patches)) {
 		const targetPath = findPackage(name, sourcePath, join(rootDir, 'package.json')) || '',
 			dir = dirname(targetPath);
@@ -102,6 +104,8 @@ export function parseDependency(
 		const { version } = JSON.parse(readFileSync(targetPath, 'utf8'));
 		target.version = version;
 
+		const targetPatches: Patch[] = [];
+
 		for (const patchConfig of patchConfigs) {
 			const path = patchesDir ? join(patchesDir, patchConfig.path) : patchConfig.path;
 			if (patchConfig.version && !satisfiesSemver(version, patchConfig.version)) {
@@ -109,16 +113,21 @@ export function parseDependency(
 				continue;
 			}
 
-			optionsConfig.push({
+			const patch = {
 				...patchConfig,
 				source,
 				target,
 				rootDir,
 				path,
 				usePatchedDependencies,
-			});
+			};
+
+			patches.push(patch);
+			targetPatches.push(patch);
 		}
+
+		targets.push({ ...target, patches: targetPatches });
 	}
 
-	return { ...source, patches: optionsConfig, patchesDir };
+	return { ...source, targets, patches, patchesDir };
 }
