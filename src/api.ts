@@ -49,7 +49,7 @@ export function formatPatch(patch: Patch, patchesDir?: string): string {
 	return text;
 }
 
-export function patchDependent(patch: Patch) {
+export function patchDependent(patch: Patch, merge: boolean = false) {
 	const root = join(patch.rootDir, 'package.json');
 
 	const patchPath = resolve('node_modules', patch.source.dir, patch.path);
@@ -65,7 +65,16 @@ export function patchDependent(patch: Patch) {
 	}
 
 	io.debug('Patching', patch.target.name, 'v' + patch.target.version, 'using', patchPath);
-	const applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.target.dir);
+	let applied: boolean;
+	try {
+		applied = applyPatchToDir(readFileSync(patchPath, 'utf8'), patch.target.dir, {
+			label: patchPath,
+			writeConflicts: merge,
+		});
+	} catch (e: any) {
+		e.message = `Failed to patch ${patch.target.name}@${patch.target.version} with ${patchPath}\n${e.message}`;
+		throw e;
+	}
 	console.log(
 		applied ? 'Patched' : styleText('yellow', 'Skipped'),
 		styleText('bold', patch.target.name),

@@ -10,6 +10,11 @@ const defaultDirectory = process.env.INIT_CWD || process.cwd();
 const parseArgsConfig = {
 	options: {
 		directory: { short: 'd', type: 'string', default: defaultDirectory },
+		merge: {
+			short: 'm',
+			type: 'boolean',
+			default: ['y', 'yes', 'true', '1'].includes(process.env.PATCH_MERGE?.toLowerCase() || ''),
+		},
 		debug: { type: 'boolean' },
 		help: { short: 'h', type: 'boolean' },
 	},
@@ -27,6 +32,7 @@ Commands:
 
 Options:
     -d, --directory <path>  The directory to work with, like npm prefix. (default=${defaultDirectory})
+    -m, --merge             Write patch conflicts as merge conflicts to the file
     --debug                 Show debug output
     -h, --help              Show this help message
 `;
@@ -52,6 +58,7 @@ const debugValues = [
 	['INIT_CWD', process.env.INIT_CWD],
 	['cwd', process.cwd()],
 	['directory', options.directory],
+	['merge', options.merge],
 ];
 io.debug(debugValues.map(([key, value]) => `${key}=${JSON.stringify(value)}`).join(', '));
 
@@ -71,7 +78,13 @@ switch (args[0] ?? 'apply') {
 		}
 		break;
 	case 'apply':
-		for (const patch of patches) patchDependent(patch);
+		for (const patch of patches)
+			try {
+				patchDependent(patch, options.merge);
+			} catch (e) {
+				io.exit(e);
+			}
+
 		break;
 	case 'help':
 		console.log(usageText);
